@@ -9,9 +9,9 @@ with open('shipping.json') as f:
 
 if '-v' in sys.argv: #Version info
     print(f"""S* Package Manager
-    Version:    {shippingData[version]}
-    Author:     {shippingData[release]}
-    Repository: {shippingData[repository]}
+    Version:    {shippingData['version']}
+    Author:     {shippingData['release']}
+    Repository: {shippingData['repository']}
     """)
 
 if '-b' in sys.argv: #Build local package index
@@ -19,7 +19,7 @@ if '-b' in sys.argv: #Build local package index
     Rebuilding the package index will allow the installation of packages if it doesn't exist, but overwriting an existing package index will remove your ability to manage and uninstall packages installed and controller by spm""")
     if input("Continue (y/n): ") == 'y':
         print("Rebuilding the index.")
-        exampleIndex = {"indexDate": time.time(),"indexGenerationVersion": shippingData[release],"packages": []}
+        exampleIndex = {"indexDate": time.time(),"indexGenerationVersion": shippingData['release'],"packages": []}
         with open('primary.index', 'w') as f:
             json.dump(exampleIndex, f)
 
