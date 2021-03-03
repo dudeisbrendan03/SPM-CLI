@@ -78,4 +78,3 @@ if cli.checkStaticFlag(sys.argv): #Check with cli module if any static flags wer
         api.getPackage('something')
 except: cli.verbose('No flags passed'); pass"""
 
-print(package.getRemoteIndex())

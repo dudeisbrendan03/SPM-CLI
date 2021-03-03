@@ -20,7 +20,6 @@ class config(object):
         import lib.etc as etc
         self.json = etc.getJson()
         
-        
 
     def shipping(self):
         try:
@@ -35,7 +34,7 @@ class config(object):
         try:
             with open(self.configLocation,'r') as f:
                 configObj = self.json.load(f)
-                if configObj['ssl']: configObj['baseurl'] = f"https://{configObj['endpoint']}"
+                if configObj['ssl'] == True: configObj['baseurl'] = f"https://{configObj['endpoint']}"
                 else: configObj['baseurl'] = f"http://{configObj['endpoint']}"
                 return configObj
         except:
