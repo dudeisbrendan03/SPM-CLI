@@ -6,30 +6,25 @@ data tools library
 
 """
 
-class config(object):
-    def __init__(self,config={}) -> None:
+from json.decoder import JSONDecodeError
+
+
+class data(object):
+    def __init__(self) -> None:
         super().__init__()
-        #Detection
-        import lib.detection
 
-        self.systemDir = lib.detection.systempath
+        import lib.etc as etc
+        self.json = etc.getJson()
 
-        self.debug = {}
-        if not "shipping" in config:
-            config['shipping'] = ''
-
-        #Import json
+    def updateFile(self,filepath,data):
         try:
-            from simplejson import json
-            self.debug['jsonModule'] = 'simplejson'
-            self.json = json
-        except:
-            import json
-            self.debug['jsonModule'] = 'nativejson'
-            self.json = json
-        
+            with open(filepath,'r') as f:
+                try: originalData= self.json.load(f)# Read the data with json.load
+                except: raise JSONDecodeError
+        except: raise FileNotFoundError
 
-    def shipping(self):
-        
-
-        return shippingData
+        try:
+            with open(filepath,'w') as f:# Open the file in write
+                newData = {**data, **originalData}# Combine our arrays
+                f.write(self.json.dumps(newData))# Write the data
+        except: raise IOError

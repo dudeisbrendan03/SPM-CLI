@@ -7,14 +7,14 @@ config tools library
 """
 
 class config(object):
-    def __init__(self,config={}) -> None:
+    def __init__(self) -> None:
         super().__init__()
         #Detection
         from lib.detection import detection
 
         self.detection = detection()
 
-        self.debug = {}
+        self.configLocation = self.detection.getpath('$CONFIG')+'config'# Config location
 
         #Import json using simplejson, and if that fails change to (native) json
         import lib.etc as etc
@@ -25,7 +25,7 @@ class config(object):
     def shipping(self):
         try:
             with open(self.detection.getpath('$CONFIG')+'defaults/shipping.json') as f:
-                shippingData = self.json.loads(f)
+                shippingData = self.json.load(f)
         except:
             shippingData = {}
 
@@ -33,7 +33,7 @@ class config(object):
 
     def getConfig(self):
         try:
-            with open(self.detection.getpath('$CONFIG')+'config','r') as f:
+            with open(self.configLocation,'r') as f:
                 return self.json.load(f)
         except:
             return False
@@ -46,7 +46,7 @@ class config(object):
             try: mkdir(self.detection.getpath('$HOME')+'.spm')
             except: pass
 
-            with open(self.detection.getpath('$CONFIG')+'config','w') as f:
+            with open(self.configLocation,'w') as f:
                 f.write(self.json.dumps(self.buildDefaults('default')))
 
     def buildDefaults(self,configType=''):
