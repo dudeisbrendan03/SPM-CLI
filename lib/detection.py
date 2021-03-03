@@ -17,21 +17,21 @@ class detection(object):
         self.genericplatform = genericplatform
 
     def platform(self):
-        return self.sysplatform
+        return self.genericplatform
         
     def platformname(self):
-        return self.genericplatform
+        return self.sysplatform
         
     def getpath(self,path):
         if path ==      '$HOME':
-            if self.platform() == 'Linux' or self.platform() == 'Darwin': return '~'
-            elif self.platform() == 'Windows': return '%userprofile%'
+            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '~'
+            elif self.platformname() == 'Windows': return '%userprofile%'
         elif path ==    '$DISK':
-            if self.platform() == 'Linux' or self.platform() == 'Darwin': return '/'
-            elif self.platform() == 'Windows': return 'C:\\'
+            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '/'
+            elif self.platformname() == 'Windows': return 'C:\\'
         elif path ==    '$CONFIG':
-            if self.platform() == 'Linux' or self.platform() == 'Darwin': return self.getpath('$HOME')+'/.spm/'
-            elif self.platform() == 'Windows': return self.getpath('$HOME')+'\\.spm\\'
+            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return self.getpath('$HOME')+'/.spm/'
+            elif self.platformname() == 'Windows': return self.getpath('$HOME')+'\\.spm\\'
 
         return False #not implemented
                 
