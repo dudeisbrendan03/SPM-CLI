@@ -1,5 +1,6 @@
 {
     "version": "0.0.1",
     "repository": "https://github.com/dudeisbrendan03/SPM-cli",
-    "release": "pre"
+    "release": "pre",
+    "author": "Brendan Jennings <jbrendan70@outlook.com>"
 }
