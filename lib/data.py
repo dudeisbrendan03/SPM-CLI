@@ -10,7 +10,7 @@ from json.decoder import JSONDecodeError
 
 
 class data(object):
-    def __init__(self) -> None:
+    def __init__(self,verbose) -> None:
         super().__init__()
 
         import lib.etc as etc

@@ -11,12 +11,15 @@ cli tools library
 
 
 class cli(object):
-    def __init__(self) -> None:
+    def __init__(self,verbose) -> None:
         super().__init__()
         
+        #Set verbose flag
+        self.verbosef = verbose
+
         #Import config lib
         from lib.config import config
-        self.config = config()
+        self.config = config(verbose)
         self.shipping = self.config.shipping()
 
     def checkStaticFlag(self,args):
@@ -72,6 +75,5 @@ Usage:
             return True
         return False
 
-    @staticmethod
-    def verbose(message,flag=False):
-            if flag: print(f"[VERBOSE] {message}")
+    def verbose(self,message):
+            if self.verbosef: print(f"[VERBOSE] {message}")
