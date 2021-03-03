@@ -1,4 +1,3 @@
-@staticmethod
 def getJson():
     try:
         from simplejson import json
