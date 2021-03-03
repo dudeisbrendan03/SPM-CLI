@@ -1,0 +1,48 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "spm.py",
+  "steps": [
+    {
+      "file": "spm.py",
+      "description": "Check for the -v flag inside the passed arguments",
+      "line": 12
+    },
+    {
+      "file": "spm.py",
+      "description": "Start importing our libraries",
+      "line": 18
+    },
+    {
+      "file": "spm.py",
+      "description": "Import config and cli first prior to everything else, this means we can generate our configs and provide verbose logging",
+      "line": 27
+    },
+    {
+      "file": "spm.py",
+      "description": "If the config returned is empty (non-existant), create one and reinitialise the libraries",
+      "line": 32
+    },
+    {
+      "file": "spm.py",
+      "description": "Initialise the rest of our libraries",
+      "line": 46
+    },
+    {
+      "file": "spm.py",
+      "description": "Check all our flags passed",
+      "line": 58
+    },
+    {
+      "file": "spm.py",
+      "description": "Check for any static flags, like --help and --version. These flags don't go anywhere or modify files, so we exit after",
+      "line": 62
+    },
+    {
+      "file": "spm.py",
+      "description": "Yet to do anything else",
+      "line": 66
+    }
+  ],
+  "description": "TBF",
+  "isPrimary": true
+}

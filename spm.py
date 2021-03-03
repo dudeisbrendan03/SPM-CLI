@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # ^^ Shebang for running on nix systems without calling python
 
+
+
 # ---------------------------------------------------------------------------- #
 #                            Non-lib package imports                           #
 # ---------------------------------------------------------------------------- #
@@ -9,6 +11,8 @@ import sys
 # ------------------------- Check if verbose flag set ------------------------ #
 if '-v' in sys.argv: verbose = True
 else: verbose = False
+
+
 
 # ---------------------------------------------------------------------------- #
 #                              Lib package imports                             #
@@ -48,6 +52,8 @@ detection = detection(verbose); data = data(verbose); api = api(verbose); packag
 # Log out config location
 cli.verbose(f"Configuration location: {config.configLocation}")
 
+
+
 # ---------------------------------------------------------------------------- #
 #                                  Check flags                                 #
 # ---------------------------------------------------------------------------- #
@@ -58,7 +64,7 @@ if cli.checkStaticFlag(sys.argv): #Check with cli module if any static flags wer
     exit(0)#Static flag passed, exit
 
 # ------------------------------- Command flags ------------------------------ #
-try:
+"""try:#Please note the below is a placeholder
     if sys.argv[1] == 'install':
         api.getPackage('something')
 
@@ -70,6 +76,6 @@ try:
 
     elif sys.argv[1] == 'update':
         api.getPackage('something')
-except: cli.verbose('No flags passed'); pass
+except: cli.verbose('No flags passed'); pass"""
 
 print(package.getRemoteIndex())
