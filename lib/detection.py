@@ -12,10 +12,13 @@ class detection(object):
 
         #Get users paltform
         from platform import system
-        self.platform = system
+        self.sysplatform = system
         from os import name as genericplatform
         self.genericplatform = genericplatform
 
+    def platform(self):
+        return self.sysplatform
+        
     def systempath(self,path):
         if path == '$HOME':
             if self.platform == 'Linux' or self.platform == 'Darwin':
