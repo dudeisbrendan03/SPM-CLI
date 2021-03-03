@@ -7,7 +7,7 @@ detection tools library
 """
 
 class detection(object):
-    def __init__(self,config={}) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
         #Get users paltform
@@ -24,14 +24,16 @@ class detection(object):
         
     def getpath(self,path):
         if path ==      '$HOME':
-            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '~'
-            elif self.platformname() == 'Windows': return '%userprofile%'
+            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '~/'
+            elif self.platformname() == 'Windows':
+                from os import environ
+                return f"{environ['USERPROFILE']}\\"
         elif path ==    '$DISK':
             if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '/'
             elif self.platformname() == 'Windows': return 'C:\\'
         elif path ==    '$CONFIG':
             if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return self.getpath('$HOME')+'/.spm/'
-            elif self.platformname() == 'Windows': return self.getpath('$HOME')+'\\.spm\\'
+            elif self.platformname() == 'Windows': return self.getpath('$HOME')+'.spm\\'
 
         return False #not implemented
                 
