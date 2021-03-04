@@ -25,6 +25,10 @@ class package(object):
         from lib.config import config
         from lib.cli import cli;cli=cli(verbose)
 
+# ----------------------------- Custom exceptions ---------------------------- #
+        import lib.issue as SPMCLIExceptions
+        self.SPMCLIExceptions = SPMCLIExceptions
+
 # -------------------------------- get config -------------------------------- #
         self.config = config(verbose)
 
