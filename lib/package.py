@@ -111,15 +111,23 @@ class package(object):
         #input("Press ENTER to iterrate")self.cli.clear()
 
     def downloadPackage(self, package):
-        packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"
-        self.log('Checking if package is already downloaded')
-        self.log(f"Searching for: {self.detection.getPath('$CONFIG')+'packages/'+packageuuid}")
-        if self.os.path.exists(self.detection.getPath('$CONFIG')+'packages/'+packageuuid):
-            packageData = self.data.readConfigFile(self.detection.getPath('$CONFIG')+packageuuid)
-        else:
-            print("Pacakge doesn't exist locally, going to fetch it")
-            passed, packageData = self.fetchPackageData(package)
-            if passed:
-                self.data.readConfigFile(f"packages/{packageData['uuid']}")
+        try:
+            packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"
+            print("Checking package status...")
+            self.log('Checking if package is already downloaded')
+            self.log(f"Searching for: {self.detection.getPath('$CONFIG')+'packages/'+packageuuid}")
+            if self.os.path.exists(self.detection.getPath('$CONFIG')+'packages/'+packageuuid):
+                print("Found package in cache!")
+                packageData = self.data.readConfigFile('packages/'+packageuuid)
             else:
-                print("The package you requested doesn't exist or isn't publicly available")
+                print("Pacakge doesn't exist locally, going to fetch it")
+                passed, packageData = self.fetchPackageData(package)
+                if passed:
+                    self.data.readConfigFile(f"packages/{packageData['uuid']}")
+                else:
+                    print("The package you requested doesn't exist or isn't publicly available")
+                    return
+            self.log("Managed to retrieve required data, going to go ahead and attempt to install it")
+            self.log(f"Package contents: {str(packageData)}")
+            print("Getting ready to install")
+        except IndexError: raise Exception("Bad package")
