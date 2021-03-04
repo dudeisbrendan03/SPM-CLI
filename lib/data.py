@@ -7,6 +7,7 @@ data tools library
 """
 
 from json.decoder import JSONDecodeError
+from re import I
 
 
 class data(object):
@@ -14,10 +15,15 @@ class data(object):
         super().__init__()
 
         import os
-
+        import requests
+        import lib.issue as SPMCLIExceptions
         import lib.etc as etc
+        
         from lib.detection import detection
         from lib.cli import cli;
+        
+        self.SPMCLIExceptions = SPMCLIExceptions
+        self.requests = requests
         self.os = os
         self.cli=cli(verbose)
         self.detection = detection(verbose)
@@ -87,3 +93,38 @@ class data(object):
             self.log(f"Failed to see if {self.detection.getPath('$CONFIG')+filepath} exists")
             pass
         except: pass
+
+# ---------------------------------------------------------------------------- #
+#                          network based file options                          #
+# ---------------------------------------------------------------------------- #
+
+# ------------------------------ download a file ----------------------------- #
+
+    def getFilename_fromCd(cd):#https://www.tutorialspoint.com/answers/arjun-thakur
+        from re import findall
+        if not cd:
+            return None
+        fname = findall('filename=(.+)', cd)
+        if len(fname) == 0:
+            return None
+        return fname[0]
+
+    def downloadFile(self,uri,writeLocation):
+        self.log('Trying to download: '+str(uri))
+        try:
+            r = self.requests.get(uri, allow_redirects=True)
+            try: filename = self.getFilename_fromCd(r.headers.get('content-disposition'))
+            except:
+                from re import compile
+                self.log("Couldn't determine filename, attempting alternative method")
+                plainuri = compile(r"https?://(www\.)?").sub('',uri).strip().strip('/')
+                try: filename = plainuri.split('/')[-1]
+                except IndexError: filename = plainuri
+                self.log("Output using regex: "+str(filename))
+                
+            self.log(f"Writing to {writeLocation+'/'+filename}")
+            open(writeLocation+'/'+filename, 'wb').write(r.content)
+            return (True, str(filename))
+        except:
+            self.log('Failed to download the content requested!')
+            return (False, '')
