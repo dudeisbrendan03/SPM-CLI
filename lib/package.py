@@ -14,13 +14,23 @@ class package(object):
     def __init__(self,verbose) -> None:
         super().__init__()
 
-        
+# --------------------------- import 3rd/non-class --------------------------- #
         import lib.etc as etc
+        import os
+
+# ----------------------------- import libraries ----------------------------- #
         from lib.api import api
         from lib.detection import detection
         from lib.data import data
+        from lib.config import config
         from lib.cli import cli;cli=cli(verbose)
+
+# -------------------------------- get config -------------------------------- #
+        self.config = config(verbose)
+
+# ----------------------- initialise all other classes ----------------------- #
         self.data = data(verbose)
+        self.os = os
         self.cli = cli
         self.json = etc.getJson()
         self.api = api(verbose)
@@ -50,21 +60,27 @@ class package(object):
         localPackageIndex = self.getDiskIndex()
         try:
             self.log('Importing progressbar')
-            import progressbar
+            from progressbar import progressbar
             self.log('Create package asset directory')
             self.data.createConfigDirectory('packages')
             self.cli.clear()
             #print("Fetching packages...")
-            for package in progressbar.progressbar(localPackageIndex):
+            for package in progressbar(localPackageIndex):
                 print(f"\nFetching {package} ({ localPackageIndex[package]['uri'] })")
                 self.getPackageLoopCall(localPackageIndex, package)
+                self.cli.clear()
+            print("Finished fetching packages from remote")
 
-        except ModuleNotFoundError:
+        except (ModuleNotFoundError,ImportError):
             self.log("Missing progressbar library")
+            x=0
             for package in localPackageIndex:
-                print()
+                print(f'Downloading package data\n {x}/{len(localPackageIndex)} - {str(round((x/len(localPackageIndex))*100,1))+"%"} ')
                 print(f"\nFetching {package} ({ localPackageIndex[package]['uri'] })")
                 self.getPackageLoopCall(localPackageIndex, package)
+                self.cli.clear()
+                x+=1
+            print("Finished fetching packages from remote")
 
         except Exception as e:
             self.log(f"Something went wrong, the error returned was: {e}")
@@ -79,4 +95,29 @@ class package(object):
             self.data.createConfigFile(f'packages/{package}',str(packageData))
         elif apiResponse == 403: self.log('The package is private')
         else: self.log('Server did not reply with ok')
+        #input("Press ENTER to iterrate")
+
+    def fetchPackageData(self, package):
+        self.log('Asking API for package data...')
+        packageData, apiResponse = self.api.getPackage(self.config.getConfig()['baseurl']+'/'+package) #e.g. "spm install breisbrenny/SomePackage"
+        if apiResponse == 200:
+            self.log('Got the following to write to the disk '+str(packageData))
+            
+            self.log('Writing package to disk')
+            self.data.createConfigFile(f'packages/{package}',str(packageData))
+            return (True,packageData)
+        elif apiResponse == 403: self.log('The package is private'); return (False, {})
+        else: self.log('Server did not reply with ok'); return (False, {})
         #input("Press ENTER to iterrate")self.cli.clear()
+
+    def downloadPackage(self, package):
+        self.log('Checking if package is already downloaded')
+        if self.os.path.exists(self.detection.getPath('$CONFIG')+package):
+            packageData = self.data.readConfigFile(self.detection.getPath('$CONFIG')+package)
+        else:
+            print("Pacakge doesn't exist locally, going to fetch it")
+            passed, packageData = self.fetchPackageData(package)
+            if passed:
+                self.data.readConfigFile(f"packages/{packageData['uuid']}")
+            else:
+                print("The package you requested doesn't exist or isn't publicly available")

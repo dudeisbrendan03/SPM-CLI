@@ -13,9 +13,12 @@ class data(object):
     def __init__(self,verbose) -> None:
         super().__init__()
 
+        import os
+
         import lib.etc as etc
         from lib.detection import detection
         from lib.cli import cli;
+        self.os = os
         self.cli=cli(verbose)
         self.detection = detection(verbose)
         self.log = self.cli.verbose
@@ -37,21 +40,17 @@ class data(object):
 # ------------------------- config directory options ------------------------- #
     def createConfigDirectory(self,filepath):
         self.log('Data called to create dir')
-        try:
-            import os
-            target = self.detection.getPath('$CONFIG')+filepath
-            self.log('Created target path to created')
-            if not os.path.exists(target):
-                self.log("Target directory doesn't exist... creating")
-                os.mkdir(target)
-            self.log('Created a directory')
-        except: pass
+        target = self.detection.getPath('$CONFIG')+filepath
+        self.log('Created target path to created')
+        if not self.os.path.exists(target):
+            self.log("Target directory doesn't exist... creating")
+            self.os.mkdir(target)
+        self.log('Created a directory')
 
 # ---------------------------- config file options --------------------------- #
     def createConfigFile(self,filepath,data):
         self.log('Data called to create file')
         try:
-            import os
             target = self.detection.getPath('$CONFIG')+filepath
             self.log('Created target path to create')
             self.log('Writing')
@@ -62,11 +61,22 @@ class data(object):
     def deleteConfigFile(self,filepath):
         self.log('Data called to remove file')
         try:
-            import os
             target = self.detection.getPath('$CONFIG')+filepath
             self.log('Created target path to delete')
-            if os.path.exists(target):
+            if self.os.opath.exists(target):
                 self.log('Target file exists... removing')
-                os.remove(target)
+                self.os.oremove(target)
                 self.log('Deleted a file')
+        except: pass
+
+    def readConfigFile(self,filepath):
+        self.log('Data called to read file')
+        try:
+            target = self.detection.getPath('$CONFIG')+filepath
+            self.log('Created target path to read')
+            if self.os.path.exists(target):
+                self.log('File exists... reading')
+                with open(target,'r') as f:
+                    return self.json.load(f)
+            pass
         except: pass
