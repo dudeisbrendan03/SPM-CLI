@@ -64,17 +64,26 @@ if cli.checkStaticFlag(sys.argv): #Check with cli module if any static flags wer
     exit(0)#Static flag passed, exit
 
 # ------------------------------- Command flags ------------------------------ #
-"""try:#Please note the below is a placeholder
-    if sys.argv[1] == 'install':
-        api.getPackage('something')
+#Please note the below is a placeholder
+if sys.argv[1] == 'install':
+    api.getPackage('something')
 
-    elif sys.argv[1] == 'remove':
-        api.getPackage('something')
+elif sys.argv[1] == 'remove':
+    api.getPackage('something')
 
-    elif sys.argv[1] == 'config':
-        api.getPackage('something')
+elif sys.argv[1] == 'config':
+    api.getPackage('something')
 
-    elif sys.argv[1] == 'update':
-        api.getPackage('something')
-except: cli.verbose('No flags passed'); pass"""
+elif sys.argv[1] == 'update':
+    api.getPackage('something')
+
+elif sys.argv[1] == 'fetch':
+    print("Updating the remote package index...")
+    from os import path
+    if path(detection.getpath('$HOME')+'remote.index') == True: print("Overwriting remote package index on disk...")
+    cli.verbose('Calling getRemoteIndex to write to disk')
+    try: package.getRemoteIndex()
+    except: print("Failed to write to the remote index store on disk")
+
+else: cli.verbose('No flags passed'); pass
 
