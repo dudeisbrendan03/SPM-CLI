@@ -36,8 +36,7 @@ config = config(verbose); cli = cli(verbose)# Initialise config and cli libs
 if config.getConfig() == {}:
     cli.verbose("Building config")
     config.buildConfig('default')
-    config = config(verbose)#Reload config lib
-    cli = cli(verbose)#Reload cli lib
+    print("First run! Hi there, default configuration generated and saved to ~/.spm/config")
 else:
     cli.verbose("Config found")
     cli.verbose(f"Configuration: {config.getConfig()}")
