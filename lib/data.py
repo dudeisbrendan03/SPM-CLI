@@ -47,6 +47,12 @@ class data(object):
             self.os.mkdir(target)
         self.log('Created a directory')
 
+    def deleteConfigDirectory(self,filepath):
+        self.log('Data called to destroy dir')
+        from shutil import rmtree
+        try: rmtree(self.detection.getPath('$CONFIG')+filepath); self.log('Deleted directory')
+        except FileNotFoundError: self.log('Directory specified does not exist'); raise FileNotFoundError("Directory specified does not exist")
+
 # ---------------------------- config file options --------------------------- #
     def createConfigFile(self,filepath,data):
         self.log('Data called to create file')
