@@ -83,6 +83,10 @@ Usage:
 
                 --save
                     Download every remote package and store to disk
+                    
+                    Flags:
+                        --delete
+                            Delete all cached package data on disk
 
                 --get (requires verbose)
                     Logs out into verbose the contents of remote.index

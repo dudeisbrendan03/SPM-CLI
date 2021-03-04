@@ -82,17 +82,23 @@ try:
         api.getPackage('something')
 
     elif sys.argv[1] == 'fetch':
+    # ------------ download all the remote package information to disk ----------- #
+        if '--save' in sys.argv:
+            if '--delete' in sys.argv:#let us delete the cache
+                print("WARNING: Deleting all cached packages")
+                from shutil import rmtree
+                try: rmtree(detection.getPath('$CONFIG')+'packages/')
+                except FileNotFoundError: print("There are no packages cached on the system")
+            else:
+                print("Download all remote package information to the disk, this may take a while...")
+                package.getAllRemotePackages()
     # ----------- delete the local package index if --delete is passed ----------- #
-        if '--delete' in sys.argv:
+        elif '--delete' in sys.argv:
             print("Deleting the remote index stored on disk...")
             cli.verbose("Calling data.deleteFile to wipe index from disk")
             data.deleteConfigFile('remote.index')
             cli.verbose("The remote index was destroyed")
 
-    # ------------ download all the remote package information to disk ----------- #
-        elif '--save' in sys.argv:
-            print("Download all remote package information to the disk, this may take a while...")
-            package.getAllRemotePackages()
 
     # --------------- debug option - print out the index to stdout --------------- #
         elif '-v' in sys.argv and '--get' in sys.argv:
@@ -111,4 +117,4 @@ try:
             except: print("Failed to write to the remote index store on disk")
 
     else: cli.verbose('No flags passed'); pass
-except IndexError: print('No flags passed') 
+except IndexError: print('No flags passed, assuming help'); cli.checkStaticFlag(['--help']) 
