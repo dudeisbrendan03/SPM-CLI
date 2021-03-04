@@ -53,6 +53,9 @@ from lib.detection  import detection
 from lib.data       import data
 detection = detection(verbose); data = data(verbose); api = api(verbose); package = package(verbose);# Initialise all other libs
 
+# ------------------------ Import custom exception lib ----------------------- #
+import lib.issue as SPMCLIExceptions
+
 # Log out config location
 cli.verbose(f"Configuration location: {config.configLocation}")
 
@@ -71,7 +74,7 @@ if cli.checkStaticFlag(sys.argv): #Check with cli module if any static flags wer
 try:
     if sys.argv[1] == 'install':
         try: package.downloadPackage(sys.argv[2])
-        except Exception as e: print("You specified an invalid package or something went wrong"); cli.verbose('Uncaught exception occured in runtime '+str(e))
+        except SPMCLIExceptions.BadPackageName as e: print("You specified an invalid package or something went wrong"); cli.verbose('Uncaught exception occured in runtime '+str(e))
 
     elif sys.argv[1] == 'remove':
         api.getPackage('something')
@@ -87,8 +90,7 @@ try:
         if '--save' in sys.argv:
             if '--delete' in sys.argv:#let us delete the cache
                 print("WARNING: Deleting all cached packages")
-                from shutil import rmtree
-                try: rmtree(detection.getPath('$CONFIG')+'packages/')
+                try: data.deleteConfigDirectory('packages/')
                 except FileNotFoundError: print("There are no packages cached on the system")
             else:
                 print("Download all remote package information to the disk, this may take a while...")
