@@ -70,7 +70,8 @@ if cli.checkStaticFlag(sys.argv): #Check with cli module if any static flags wer
 # ------------------------------- Command flags ------------------------------ #
 try:
     if sys.argv[1] == 'install':
-        package.downloadPackage(sys.argv[2])
+        try: package.downloadPackage(sys.argv[2])
+        except Exception as e: print("You specified an invalid package or something went wrong"); cli.verbose('Uncaught exception occured in runtime '+str(e))
 
     elif sys.argv[1] == 'remove':
         api.getPackage('something')
