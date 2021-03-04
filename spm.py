@@ -7,6 +7,10 @@
 #                            Non-lib package imports                           #
 # ---------------------------------------------------------------------------- #
 import sys
+import os
+
+# ------------------------------ import json lib ----------------------------- #
+from lib.etc import getJson as json; json=json()
 
 # ------------------------- Check if verbose flag set ------------------------ #
 if '-v' in sys.argv: verbose = True
@@ -78,12 +82,32 @@ elif sys.argv[1] == 'update':
     api.getPackage('something')
 
 elif sys.argv[1] == 'fetch':
-    print("Updating the remote package index...")
-    from os import path
-    if path(detection.getpath('$HOME')+'remote.index') == True: print("Overwriting remote package index on disk...")
-    cli.verbose('Calling getRemoteIndex to write to disk')
-    try: package.getRemoteIndex()
-    except: print("Failed to write to the remote index store on disk")
+# ----------- delete the local package index if --delete is passed ----------- #
+    if '--delete' in sys.argv:
+        print("Deleting the remote index stored on disk...")
+        cli.verbose("Calling data.deleteFile to wipe index from disk")
+        data.deleteConfigFile('remote.index')
+        cli.verbose("The remote index was destroyed")
+
+# ------------ download all the remote package information to disk ----------- #
+    elif '--save' in sys.argv:
+        print("Download all remote package information to the disk, this may take a while...")
+        package.getAllRemotePackages()
+
+# --------------- debug option - print out the index to stdout --------------- #
+    elif '-v' in sys.argv and '--get' in sys.argv:
+        cli.verbose("Fetching and printing the package index on disk...")
+        try:
+            print(json.dumps(package.getDiskIndex(),indent=4))
+        except json.decoder.JSONDecodeError:
+            print("Couldn't decode the JSON passed:\n"+str(package.getDiskIndex()))
+
+# ----------------------- normal package index download ---------------------- #
+    else:
+        print("Updating the remote package index...")
+        if os.path.exists(detection.getPath('$HOME')+'remote.index') == True: print("Overwriting remote package index on disk...")
+        cli.verbose('Calling getRemoteIndex to write to disk')
+        try: package.getRemoteIndex()
+        except: print("Failed to write to the remote index store on disk")
 
 else: cli.verbose('No flags passed'); pass
-
