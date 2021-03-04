@@ -22,20 +22,16 @@ class detection(object):
     def platformname(self):
         return self.sysplatform
         
-    def getpath(self,path):
+    def getPath(self,path):
         if path ==      '$HOME':
-            if self.platformname() == 'Linux' or self.platformname() == 'Darwin':
-                from os import path
-                return path.expanduser('~/')
-            elif self.platformname() == 'Windows':
-                from os import environ
-                return f"{environ['USERPROFILE']}\\"
+            from os import path
+            return path.expanduser('~/')
         elif path ==    '$DISK':
             if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return '/'
             elif self.platformname() == 'Windows': return 'C:\\'
         elif path ==    '$CONFIG':
-            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return self.getpath('$HOME')+'.spm/'
-            elif self.platformname() == 'Windows': return self.getpath('$HOME')+'.spm\\'
+            if self.platformname() == 'Linux' or self.platformname() == 'Darwin': return self.getPath('$HOME')+'.spm/'
+            elif self.platformname() == 'Windows': return self.getPath('$HOME')+'.spm\\'
 
         return False #not implemented
                 
