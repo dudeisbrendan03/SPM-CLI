@@ -92,7 +92,7 @@ class package(object):
         if apiResponse == 200:
             self.log('Got the following to write to the disk '+str(packageData))
             self.log('Writing package to disk')
-            self.data.createConfigFile(f'packages/{package}',str(packageData))
+            self.data.createConfigFile(f'packages/{package}',self.json.loads(str(packageData)))
         elif apiResponse == 403: self.log('The package is private')
         else: self.log('Server did not reply with ok')
         #input("Press ENTER to iterrate")
