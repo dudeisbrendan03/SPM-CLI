@@ -14,7 +14,7 @@ class config(object):
 
         self.detection = detection(verbose)
         self.verbosef = verbose
-        self.configLocation = self.detection.getpath('$CONFIG')+'config'# Config location
+        self.configLocation = self.detection.getPath('$CONFIG')+'config'# Config location
 
         #Import json using simplejson, and if that fails change to (native) json
         import lib.etc as etc
@@ -23,7 +23,7 @@ class config(object):
 
     def shipping(self):
         try:
-            with open(self.detection.getpath('$CONFIG')+'defaults/shipping.json') as f:
+            with open(self.detection.getPath('$CONFIG')+'defaults/shipping.json') as f:
                 shippingData = self.json.load(f)
         except:
             shippingData = {}
@@ -47,8 +47,8 @@ class config(object):
         cli = cli(self.verbosef)
         if configType == 'default':
             #Make directory if it doesn't exist
-            try: mkdir(self.detection.getpath('$HOME')+'.spm');self.cli.verbose('Created .spm directory')
-            except: cli.verbose(f"Failed to create .spm directory, it is likely to already exist. Failed to make {self.detection.getpath('$HOME')+'.spm'}");pass
+            try: mkdir(self.detection.getPath('$HOME')+'.spm');self.cli.verbose('Created .spm directory')
+            except: cli.verbose(f"Failed to create .spm directory, it is likely to already exist. Failed to make {self.detection.getPath('$HOME')+'.spm'}");pass
 
             with open(self.configLocation,'w') as f:
                 try:
@@ -61,7 +61,7 @@ class config(object):
         from lib.cli import cli # importing here to prevent circular import
         cli = cli(self.verbosef)
         if configType == 'default':
-            with open(self.detection.getpath('$CONFIG')+'defaults/config.json') as f:
+            with open(self.detection.getPath('$CONFIG')+'defaults/config.json') as f:
                 cli.verbose('Read default config')
                 return self.json.load(f)
         

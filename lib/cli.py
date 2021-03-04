@@ -19,6 +19,8 @@ class cli(object):
 
         #Import config lib
         from lib.config import config
+        from lib.detection import detection
+        self.detection = detection(verbose)
         self.config = config(verbose)
         self.shipping = self.config.shipping()
 
@@ -44,7 +46,7 @@ Repository: {self.shipping['repository']}
 Release {self.shipping['version']}
 
 Usage:
-    ./spm.py [OPTIONS] COMMAND <COMMAND FLAGS>
+    ./spm.py [OPTIONS] COMMAND <COMMAND FLAGS> <VERBOSE>
 
     Options:
         --help | -h
@@ -71,9 +73,32 @@ Usage:
 
             Flags:
                 something
+
+        fetch
+            Downloads the remote package index to your disk
+
+            Flags:
+                --delete
+                    Deletes the remote index on your disk
+
+                --save
+                    Download every remote package and store to disk
+
+                --get (requires verbose)
+                    Logs out into verbose the contents of remote.index
+    
+    Verbose:
+        -v
+            Verbose stdout output for debugging purposes
+
 """)
             return True
         return False
 
     def verbose(self,message):
-            if self.verbosef: print(f"[VERBOSE] {message}")
+        if self.verbosef: print(f"[VERBOSE] {message}")
+
+    def clear(self):
+        from os import system as s
+        if self.detection.platformname() == 'Windows': s('cls')
+        else: s('clear')

@@ -18,7 +18,10 @@ class package(object):
         import lib.etc as etc
         from lib.api import api
         from lib.detection import detection
+        from lib.data import data
         from lib.cli import cli;cli=cli(verbose)
+        self.data = data(verbose)
+        self.cli = cli
         self.json = etc.getJson()
         self.api = api(verbose)
         self.detection = detection(verbose)
@@ -31,8 +34,40 @@ class package(object):
     def getRemoteIndex(self):
         print("Trying to download remote index...")
         self.log('Writing .spm/remote.index')
-        with open(self.detection.getpath('$HOME')+'.spm/remote.index','w') as f:
+        with open(self.detection.getPath('$CONFIG')+'remote.index','w') as f:
             self.log('Fetching remote index and writing to disk')
             f.write(self.json.dumps(self.api.getIndex()))
         print("Written remote index to disk")
-        
+    
+    def getDiskIndex(self):
+        print("Retrieving disk index...")
+        self.log('Opening and writing the file to stdout')
+        with open(self.detection.getPath('$CONFIG')+'remote.index','r') as f:
+            return self.json.load(f)
+
+    def getAllRemotePackages(self):
+        print("Retrieving all remote packages, this may take a while...")
+        localPackageIndex = self.getDiskIndex()
+        try:
+            self.log('Importing progressbar')
+            import progressbar
+            self.log('Create package asset directory')
+            self.data.createConfigDirectory('packages')
+            self.cli.clear()
+            #print("Fetching packages...")
+            from time import sleep as s
+            for package in progressbar.progressbar(localPackageIndex):
+                print(f"\nFetching {package} ({ localPackageIndex[package]['uri'] })")
+                self.log('Asking API for package data...')
+                packageData, apiResponse = self.api.getPackage(localPackageIndex[package]["apiIdentifier"])
+                if apiResponse == 200:
+                    self.log('Got the following to write to the disk '+str(packageData))
+                    self.log('Writing package to disk')
+                    self.data.createConfigFile(f'packages/{package}',str(packageData))
+                elif apiResponse == 403: self.log('The package is private')
+                else: self.log('Server did not reply with ok')
+                #input("Press ENTER to iterrate")
+                self.cli.clear()
+        except Exception as e:
+            self.log("Missing progressbar library")
+            self.log(f"The error returned was: {e}")
