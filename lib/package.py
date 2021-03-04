@@ -116,14 +116,16 @@ class package(object):
 
     def downloadPackage(self, package):
         try:
-            packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"
+            packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"#Make the package uuid
+            
             print("Checking package status...")
             self.log('Checking if package is already downloaded')
             self.log(f"Searching for: {self.detection.getPath('$CONFIG')+'packages/'+packageuuid}")
-            if self.os.path.exists(self.detection.getPath('$CONFIG')+'packages/'+packageuuid):
+
+            if self.os.path.exists(self.detection.getPath('$CONFIG')+'packages/'+packageuuid):#Check if the package data is already downloaded
                 print("Found package in cache!")
                 packageData = self.data.readConfigFile('packages/'+packageuuid)
-            else:
+            else:#call the function inside this module to download the package data
                 print("Pacakge doesn't exist locally, going to fetch it")
                 passed, packageData = self.fetchPackageData(package)
                 if passed:
@@ -131,7 +133,53 @@ class package(object):
                 else:
                     print("The package you requested doesn't exist or isn't publicly available")
                     return
+
             self.log("Managed to retrieve required data, going to go ahead and attempt to install it")
             self.log(f"Package contents: {str(packageData)}")
-            print("Getting ready to install")
-        except IndexError: raise Exception("Bad package")
+            self.log("Ensure that data is dict- Converting package data from str to dict")
+            #inform the user that we have the data, check the data is a dict and not a str because i think i have some inconsistent use of json.*, i'll sort it later
+            packageData=self.json.loads(packageData.replace("'",'"'))
+            print(f"Getting ready to install {packageData['name']} version {packageData['version']} by {packageData['author']}...")
+
+            # Time to install!! :)
+
+            print("Downloading files and archives for package...")
+
+            #Create all required directories to store data during installation
+            self.log("Creating temporary dirs in config dir")
+            try: self.data.deleteConfigDirectory('temporary'); self.log('Temporary directory exists, deleted it')#make sure temporary directory doesnt exist
+            except: self.log("Temporary directory doesn't exist, good to go")
+            self.data.createConfigDirectory('temporary')
+            self.data.createConfigDirectory('temporary/content')
+            self.data.createConfigDirectory('temporary/scripts')
+            #self.data.createConfigDirectory('temporary/other')
+            downloadedContent = []
+            try:
+                from progressbar import progressbar
+                for i in progressbar(packageData['content']):
+                    print(f"\nDownloading: {i}")#loop through content and download each one
+                    downloadResult = self.data.downloadFile(i,self.detection.getPath('$CONFIG')+'temporary/content')
+                    if downloadResult[0] == False:
+                        print("Failed to download "+str(i))
+                        raise self.SPMCLIExceptions.FailedContentDownload
+                    downloadedContent.append(str(downloadResult[1]))
+                    self.cli.clear()
+
+            except (ModuleNotFoundError, ImportError):
+                self.log('progressbar2 not installed')
+                for i in len(packageData['content']):#same as above with custom progress info since we cant use progressbar2
+                    print(f'Downloading package data\n {i}/{packageData["content"]} - {str(round((i/len(packageData["content"]))*100,1))+"%"} ')
+                    print(F"Downloading: {packageData['content'][i]}")
+                    downloadResult = self.data.downloadFile(packageData['content'][i],self.detection.getPath('$CONFIG')+'temporary/content')
+                    if downloadResult[0] == False:
+                        print("Failed to download "+str(packageData['content'][i]))
+                        raise self.SPMCLIExceptions.FailedContentDownload
+                    downloadedContent.append(str(downloadResult[1]))
+                    self.cli.clear()
+
+            print("Finished downloading assets, downloading scripts")#we've passed, all gucci time to continue
+
+            #self.data.deleteConfigDirectory('temporary')#finished the installation, delete the temporary directory
+
+
+        except IndexError: raise self.SPMCLIExceptions.BadPackageName
