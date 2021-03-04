@@ -55,19 +55,28 @@ class package(object):
             self.data.createConfigDirectory('packages')
             self.cli.clear()
             #print("Fetching packages...")
-            from time import sleep as s
             for package in progressbar.progressbar(localPackageIndex):
                 print(f"\nFetching {package} ({ localPackageIndex[package]['uri'] })")
-                self.log('Asking API for package data...')
-                packageData, apiResponse = self.api.getPackage(localPackageIndex[package]["apiIdentifier"])
-                if apiResponse == 200:
-                    self.log('Got the following to write to the disk '+str(packageData))
-                    self.log('Writing package to disk')
-                    self.data.createConfigFile(f'packages/{package}',str(packageData))
-                elif apiResponse == 403: self.log('The package is private')
-                else: self.log('Server did not reply with ok')
-                #input("Press ENTER to iterrate")
-                self.cli.clear()
-        except Exception as e:
+                self.getPackageLoopCall(localPackageIndex, package)
+
+        except ModuleNotFoundError:
             self.log("Missing progressbar library")
-            self.log(f"The error returned was: {e}")
+            for package in localPackageIndex:
+                print()
+                print(f"\nFetching {package} ({ localPackageIndex[package]['uri'] })")
+                self.getPackageLoopCall(localPackageIndex, package)
+
+        except Exception as e:
+            self.log(f"Something went wrong, the error returned was: {e}")
+            print("Something went wrong, try clearing the package cache first then trying again with 'spm fetch --delete' and deleting ~/.spm/packages")
+
+    def getPackageLoopCall(self, localPackageIndex, package):#Extracted this- less duplicate code
+        self.log('Asking API for package data...')
+        packageData, apiResponse = self.api.getPackage(localPackageIndex[package]["apiIdentifier"])
+        if apiResponse == 200:
+            self.log('Got the following to write to the disk '+str(packageData))
+            self.log('Writing package to disk')
+            self.data.createConfigFile(f'packages/{package}',str(packageData))
+        elif apiResponse == 403: self.log('The package is private')
+        else: self.log('Server did not reply with ok')
+        #input("Press ENTER to iterrate")self.cli.clear()
