@@ -78,5 +78,6 @@ class data(object):
                 self.log('File exists... reading')
                 with open(target,'r') as f:
                     return self.json.load(f)
+            self.log(f"Failed to see if {self.detection.getPath('$CONFIG')+filepath} exists")
             pass
         except: pass
