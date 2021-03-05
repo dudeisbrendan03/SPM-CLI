@@ -40,6 +40,7 @@ class package(object):
         self.api = api(verbose)
         self.detection = detection(verbose)
         self.log = cli.verbose
+        self.verbose = verbose
 
     def buildIndex(self):
         print("WARNING\nRebuilding the package index will allow the installation of packages if it doesn't exist, but overwriting an existing package index will remove your ability to manage and uninstall packages installed and controller by spm")
@@ -95,18 +96,19 @@ class package(object):
 
     def getPackageLoopCall(self, localPackageIndex, package):#Extracted this- less duplicate code
         self.log('Asking API for package data...')
-        packageData, apiResponse = self.api.getPackage(localPackageIndex[package]["apiIdentifier"])
+        packageData, apiResponse = self.api.getPackage(localPackageIndex[package]["uuid"])
         if apiResponse == 200:
             self.log('Got the following to write to the disk '+str(packageData))
-            self.log('Writing package to disk')
+            self.log(f'Writing package to disk in ~/.spm/packages/{package}')
             self.data.createConfigFile(f'packages/{package}',self.json.dumps(str(packageData)))
         elif apiResponse == 403: self.log('The package is private')
         else: self.log('Server did not reply with ok')
         #input("Press ENTER to iterrate")
 
-    def fetchPackageData(self, package):
+    def fetchPackageData(self, package,appendBaseUri=True):
         self.log('Asking API for package data...')
-        packageData, apiResponse = self.api.getPackage(self.config.getConfig()['baseurl']+'/'+package) #e.g. "spm install breisbrenny/SomePackage"
+        if appendBaseUri: packageData, apiResponse = self.api.getPackage(self.config.getConfig()['baseurl']+'/'+package) #e.g. "spm install breisbrenny/SomePackage"
+        else: packageData, apiResponse = self.api.getPackage('/'+package) #e.g. "spm install breisbrenny/SomePackage"
         if apiResponse == 200:
             self.log('Got the following to write to the disk '+str(packageData))
             
@@ -117,8 +119,14 @@ class package(object):
         else: self.log('Server did not reply with ok'); return (False, {})
         #input("Press ENTER to iterrate")self.cli.clear()
 
+# ---------------------------------------------------------------------------- #
+#                               package installer                              #
+# ---------------------------------------------------------------------------- #
+
     def downloadPackage(self, package):
         try:
+
+# ------------------------- parse package informatio ------------------------- #
             packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"#Make the package uuid
             
             print("Checking package status...")
@@ -130,31 +138,58 @@ class package(object):
                 packageData = self.data.readConfigFile('packages/'+packageuuid)
             else:#call the function inside this module to download the package data
                 print("Pacakge doesn't exist locally, going to fetch it")
-                passed, packageData = self.fetchPackageData(package)
+                passed, packageData = self.fetchPackageData(package,False)
                 if passed:
                     self.data.readConfigFile(f"packages/{packageData['uuid']}")
                 else:
                     print("The package you requested doesn't exist or isn't publicly available")
                     return
 
+# ------------------------- got data, load and verify ------------------------ #
             self.log("Managed to retrieve required data, going to go ahead and attempt to install it")
             self.log(f"Package contents: {str(packageData)}")
             self.log("Ensure that data is dict- Converting package data from str to dict")
             #inform the user that we have the data, check the data is a dict and not a str because i think i have some inconsistent use of json.*, i'll sort it later
-            packageData=self.json.loads(packageData.replace("'",'"'))
+            try: packageData=self.json.loads(packageData.replace("'",'"'))
+            except AttributeError: self.log("Data is already dict!")
             print(f"Getting ready to install {packageData['name']} version {packageData['version']} by {packageData['author']}...")
 
             # Time to install!! :)
 
             print("Downloading files and archives for package...")
 
+# ----------------- check if system may install this package ----------------- #
+            #Operating system flag
+            thisSystem = ''
+            if self.detection.platform() == 'nt': thisSystem+='win'
+            elif self.detection.platform() == 'posix': thisSystem+='lin'
+
+            #Check CPU architecture
+            import struct
+            thisSystem+=str(struct.calcsize("P") * 8)
+
+            if packageData['platform'] != 'Darwin':
+                if thisSystem != 'any':
+                    if thisSystem != packageData['platform']:
+                        if struct.calcsize("P") * 8 == 32:
+                            print("WARN: Check you don't have 32-bit python installed on a 64-bit operating system!")
+                        print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
+                        raise self.SPMCLIExceptions.UnsupportedOperatingSystem
+            else:
+                print("This package is for MacOS, checking it's compatible")
+                if self.detection.platformname() != 'Darwin':
+                    print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
+                    raise self.SPMCLIExceptions.UnsupportedOperatingSystem
+
+            self.log("Determined user is running "+thisSystem)
+
+# ----------------------- download all required content ---------------------- #
             #Create all required directories to store data during installation
             self.log("Creating temporary dirs in config dir")
             try: self.data.deleteConfigDirectory('temporary'); self.log('Temporary directory exists, deleted it')#make sure temporary directory doesnt exist
             except: self.log("Temporary directory doesn't exist, good to go")
             self.data.createConfigDirectory('temporary')
             self.data.createConfigDirectory('temporary/content')
-            self.data.createConfigDirectory('temporary/scripts')
             #self.data.createConfigDirectory('temporary/other')
             downloadedContent = []
             try:
@@ -170,7 +205,7 @@ class package(object):
 
             except (ModuleNotFoundError, ImportError):
                 self.log('progressbar2 not installed')
-                for i in len(packageData['content']):#same as above with custom progress info since we cant use progressbar2
+                for i in range(len(packageData['content'])):#same as above with custom progress info since we cant use progressbar2
                     print(f'Downloading package data\n {i}/{packageData["content"]} - {str(round((i/len(packageData["content"]))*100,1))+"%"} ')
                     print(F"Downloading: {packageData['content'][i]['address']}")
                     downloadResult = self.data.downloadFile(packageData['content'][i]['address'],self.detection.getPath('$CONFIG')+'temporary/content',packageData['content'][i]['filename'])
@@ -182,9 +217,79 @@ class package(object):
 
             print("Finished downloading assets")#we've passed, all gucci time to continue
 
-            self.log(f'Steps: {self.json.stringify(packageData["install"])}')
-            
-            #self.data.deleteConfigDirectory('temporary')#finished the installation, delete the temporary directory
+# --------------------------- check asset integrity -------------------------- #
+            step = 1; steps = len(packageData["content"])
+            for i in packageData["content"]:
+                self.cli.clear()
+                print(f"Checking integrity of {packageData['name']} v{packageData['version']}...")
+                print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nFile: {i['filename']}\n--------------------------------")
+                self.log('Current step: '+str(i))
+                print(f"The asset {i['filename']} was downloaded from {i['address']} and is expected to have a sha256 hash of {packageData['checksum'][i['address']]}")
+                print("\nGenerating the sha256sum...")
+                checksum=self.etc.sha256sum(packageData['checksum'][i['address']],self.detection.getPath('$CONFIG')+'temporary/content/'+i['filename'])
+                if checksum == True: print(f"The downloaded file ({i['filename']}) has a valid checksum")
+                else: raise self.SPMCLIExceptions.IntegrityError(i['filename'])
+                input()
+
+# -------------------------------- change cwd -------------------------------- #
+            #Ensure we wont accidentally write into the cwd by changing it
+            #we'll move to the temp dir
+            self.os.chdir(self.detection('$CONFIG')+'temporary/')
+
+# ---------------------------- begin installation ---------------------------- #
+            self.log(f'Steps:\n{self.json.dumps(packageData["install"],indent=4)}')
+            if self.verbose == True: self.log(f"Package data: {self.json.dumps(packageData,indent=4)}");self.log(f'Steps for your system (there are {len(packageData["install"][thisSystem])}):\n{self.json.dumps(packageData["install"][thisSystem],indent=4)}')#; input("[VERBOSE] Press ENTER to continue")
+            # Install step loop
+            print("Installing...")
+            #import time
+            step = 1; steps = len(packageData["install"][thisSystem])
+            for i in packageData["install"][thisSystem]:
+                #info for end-user
+                self.cli.clear()
+                print(f"Installing {packageData['name']} v{packageData['version']}...")
+                print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nStep: {i['name']}\n--------------------------------")
+                self.log('Current step: '+str(i))
+                #time.sleep(1)
+
+                #Is step a command
+                if i['method'] == 'command':
+                    commandToRun = i['command']
+                    print("Executing: "+str(commandToRun))
+                    self.os.system(commandToRun)
+                    if exitCode != 0: 
+                        raise self.SPMCLIExceptions.FailedCommandExecution(command=commandToRun)
+
+                #Is step a script
+                if i['method'] == 'script':
+                    # Script filename is at packageData[ content[ scripts[script] ][1] ]
+
+                    #Get the filename of the script we want
+                    scriptToRun=packageData["content"][int(packageData["scripts"][i["script"]])]["filename"]
+                    self.log('Attempting to identify the script to execute ' + str(scriptToRun))
+
+                    #Get the temporary path to the script
+                    temporaryPath = self.detection.getPath('$CONFIG')+'temporary/content/'
+
+                    #Determine how we should execute the script
+                    if self.detection.platformname() == 'Darwin': 'sh ' + temporaryPath + scriptToRun
+                    elif 'lin' in thisSystem: scriptToRun = 'bash ' + temporaryPath + scriptToRun
+                    elif 'win' in thisSystem: scriptToRun = './' +  temporaryPath + scriptToRun
+
+                    print("Executing "+str(scriptToRun))
+                    exitCode = self.os.system(scriptToRun)
+                    if exitCode != 0:
+                        raise self.SPMCLIExceptions.FailedScriptExecution(filename=temporaryPath)
+
+
+            self.cli.clear()
+            print(f"Installed {packageData['name']} v{packageData['version']}...")
+            print(f"--------------------------------\nCompleted !    -  100% complete\n--------------------------------")
+            print("Cleaning")
+
+
+# ---------------------------- all done, clean up ---------------------------- #
+            self.data.deleteConfigDirectory('temporary')#finished the installation, delete the temporary directory
 
 
         except IndexError: raise self.SPMCLIExceptions.BadPackageName
+        except Exception as e: raise self.SPMCLIExceptions.FailedInstallation(e)
