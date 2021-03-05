@@ -7,11 +7,11 @@ def getJson():
         jsonModule = json
     return jsonModule
 
-def sha256sum(hash,filepath):
+def sha256sum(hash,filename, block_size=65536):
     from hashlib import sha256 #hashlib to make our lives easier, no reason to import the whole thing
-
-    with open(filepath, 'r') as f:
-        filehash = sha256(f.read()).hexdigest()
-
-    if filehash != hash: return False
-    return True
+    sha256 = sha256()
+    with open(filename, 'rb') as f:
+        for block in iter(lambda: f.read(block_size), b''):
+            sha256.update(block)
+    if hash == sha256.hexdigest(): return True
+    else: return False
