@@ -77,6 +77,9 @@ class package(object):
 
         except (ModuleNotFoundError,ImportError):
             self.log("Missing progressbar library")
+            self.log('Create package asset directory')
+            self.data.createConfigDirectory('packages')
+            self.cli.clear()
             x=0
             for package in localPackageIndex:
                 print(f'Downloading package data\n {x}/{len(localPackageIndex)} - {str(round((x/len(localPackageIndex))*100,1))+"%"} ')
