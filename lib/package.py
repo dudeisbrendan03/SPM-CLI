@@ -158,8 +158,129 @@ class package(object):
         #input("Press ENTER to iterrate")self.cli.clear()
 
 # ---------------------------------------------------------------------------- #
-#                               package installer                              #
+#                               package management                             #
 # ---------------------------------------------------------------------------- #
+
+# --------------- action routine for install, remove and update -------------- #
+    def actionRoutine(self,packageData,where,thisSystem,action=['Installing','Installed']):
+        step = 1; steps = len(packageData[where][thisSystem])
+        for i in packageData[where][thisSystem]:
+            #info for end-user
+            self.cli.clear()
+            print(f"{action[0]} {packageData['name']} v{packageData['version']}...")
+            print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nStep: {i['name']}\n--------------------------------")
+            self.log('Current step: '+str(i))
+            #time.sleep(1)
+
+            #Is step a command
+            if i['method'] == 'command':
+                commandToRun = i['command']
+                print("Executing: "+str(commandToRun))
+                self.os.system(commandToRun)
+                if exitCode != 0: 
+                    raise self.SPMCLIExceptions.FailedCommandExecution(command=commandToRun)
+
+            #Is step a script
+            if i['method'] == 'script':
+                # Script filename is at packageData[ content[ scripts[script] ][1] ]
+
+                #Get the filename of the script we want
+                scriptToRun=packageData["content"][int(packageData["scripts"][i["script"]])]["filename"]
+                self.log('Attempting to identify the script to execute ' + str(scriptToRun))
+
+                #Get the temporary path to the script
+                temporaryPath = self.detection.getPath('$CONFIG')+'temporary/content/'
+
+                #Determine how we should execute the script
+                if self.detection.platformname() == 'Darwin': 'sh ' + temporaryPath + scriptToRun
+                elif 'lin' in thisSystem: scriptToRun = 'bash ' + temporaryPath + scriptToRun
+                elif 'win' in thisSystem: scriptToRun = './' +  temporaryPath + scriptToRun
+
+                print("Executing "+str(scriptToRun))
+                exitCode = self.os.system(scriptToRun)
+                if exitCode != 0:
+                    raise self.SPMCLIExceptions.FailedScriptExecution(filename=temporaryPath)
+
+
+        self.cli.clear()
+        print(f"{action[1]} {packageData['name']} v{packageData['version']}...")
+        print(f"--------------------------------\nCompleted !    -  100% complete\n--------------------------------")
+
+
+# -------------------------- package integrity check ------------------------- #
+    def checkPackageContentIntegrity(self,packageData):
+        step = 1; steps = len(packageData["content"])
+        for i in packageData["content"]:
+            self.cli.clear()
+            print(f"Checking integrity of {packageData['name']} v{packageData['version']}...")
+            print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nFile: {i['filename']}\n--------------------------------")
+            self.log('Current step: '+str(i))
+            print(f"The asset {i['filename']} was downloaded from {i['address']} and is expected to have a sha256 hash of {packageData['checksum'][i['address']]}")
+            print("\nGenerating the sha256sum...")
+            checksum=self.etc.sha256sum(packageData['checksum'][i['address']],self.detection.getPath('$CONFIG')+'temporary/content/'+i['filename'])
+            if checksum == True: print(f"The downloaded file ({i['filename']}) has a valid checksum")
+            else: raise self.SPMCLIExceptions.IntegrityError(i['filename'])
+
+# ------------------------------ get system data ----------------------------- #
+    def canInstall(self,packageData):
+            #Operating system flag
+            thisSystem = ''
+            if self.detection.platform() == 'nt': thisSystem+='win'
+            elif self.detection.platform() == 'posix': thisSystem+='lin'
+
+            #Check CPU architecture
+            import struct
+            thisSystem+=str(struct.calcsize("P") * 8)
+
+            if packageData['platform'] != 'Darwin':
+                if thisSystem != 'any':
+                    if thisSystem != packageData['platform']:
+                        if struct.calcsize("P") * 8 == 32:
+                            print("WARN: Check you don't have 32-bit python installed on a 64-bit operating system!")
+                        print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
+                        raise self.SPMCLIExceptions.UnsupportedOperatingSystem
+            else:
+                print("This package is for MacOS, checking it's compatible")
+                if self.detection.platformname() != 'Darwin':
+                    print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
+                    raise self.SPMCLIExceptions.UnsupportedOperatingSystem
+            
+            return thisSystem
+
+# -------------------- download content from package data -------------------- #
+    def downloadedContent(self,packageData):
+            #Create all required directories to store data during installation
+            self.log("Creating temporary dirs in config dir")
+            try: self.data.deleteConfigDirectory('temporary'); self.log('Temporary directory exists, deleted it')#make sure temporary directory doesnt exist
+            except: self.log("Temporary directory doesn't exist, good to go")
+            self.data.createConfigDirectory('temporary')
+            self.data.createConfigDirectory('temporary/content')
+            #self.data.createConfigDirectory('temporary/other')
+            downloadedContent = []
+            try:
+                from progressbar import progressbar
+                for i in progressbar(packageData['content']):
+                    print(f"\nDownloading: {i}")#loop through content and download each one
+                    downloadResult = self.data.downloadFile(i['address'],self.detection.getPath('$CONFIG')+'temporary/content',i['filename'])
+                    if downloadResult[0] == False:
+                        print("Failed to download "+str(i))
+                        raise self.SPMCLIExceptions.FailedContentDownload
+                    downloadedContent.append(str(downloadResult[1]))
+                    self.cli.clear()
+
+            except (ModuleNotFoundError, ImportError):
+                self.log('progressbar2 not installed')
+                for i in range(len(packageData['content'])):#same as above with custom progress info since we cant use progressbar2
+                    print(f'Downloading package data\n {i}/{packageData["content"]} - {str(round((i/len(packageData["content"]))*100,1))+"%"} ')
+                    print(F"Downloading: {packageData['content'][i]['address']}")
+                    downloadResult = self.data.downloadFile(packageData['content'][i]['address'],self.detection.getPath('$CONFIG')+'temporary/content',packageData['content'][i]['filename'])
+                    if downloadResult[0] == False:
+                        print("Failed to download "+str(packageData['content'][i]))
+                        raise self.SPMCLIExceptions.FailedContentDownload
+                    downloadedContent.append(str(downloadResult[1]))
+                    self.cli.clear()
+
+            print("Finished downloading assets")#we've passed, all gucci time to continue
 
     def downloadPackage(self, package):
         try:
@@ -196,78 +317,17 @@ class package(object):
 
             print("Downloading files and archives for package...")
 
+# ------------------------- download package content ------------------------- #
+            self.downloadedContent(packageData)
+
 # ----------------- check if system may install this package ----------------- #
-            #Operating system flag
-            thisSystem = ''
-            if self.detection.platform() == 'nt': thisSystem+='win'
-            elif self.detection.platform() == 'posix': thisSystem+='lin'
-
-            #Check CPU architecture
-            import struct
-            thisSystem+=str(struct.calcsize("P") * 8)
-
-            if packageData['platform'] != 'Darwin':
-                if thisSystem != 'any':
-                    if thisSystem != packageData['platform']:
-                        if struct.calcsize("P") * 8 == 32:
-                            print("WARN: Check you don't have 32-bit python installed on a 64-bit operating system!")
-                        print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
-                        raise self.SPMCLIExceptions.UnsupportedOperatingSystem
-            else:
-                print("This package is for MacOS, checking it's compatible")
-                if self.detection.platformname() != 'Darwin':
-                    print(f"ERROR: This package needs {packageData['platform']}, your system is {thisSystem}\n")
-                    raise self.SPMCLIExceptions.UnsupportedOperatingSystem
+            thisSystem = self.canInstall(packageData)
 
             self.log("Determined user is running "+thisSystem)
 
-# ----------------------- download all required content ---------------------- #
-            #Create all required directories to store data during installation
-            self.log("Creating temporary dirs in config dir")
-            try: self.data.deleteConfigDirectory('temporary'); self.log('Temporary directory exists, deleted it')#make sure temporary directory doesnt exist
-            except: self.log("Temporary directory doesn't exist, good to go")
-            self.data.createConfigDirectory('temporary')
-            self.data.createConfigDirectory('temporary/content')
-            #self.data.createConfigDirectory('temporary/other')
-            downloadedContent = []
-            try:
-                from progressbar import progressbar
-                for i in progressbar(packageData['content']):
-                    print(f"\nDownloading: {i}")#loop through content and download each one
-                    downloadResult = self.data.downloadFile(i['address'],self.detection.getPath('$CONFIG')+'temporary/content',i['filename'])
-                    if downloadResult[0] == False:
-                        print("Failed to download "+str(i))
-                        raise self.SPMCLIExceptions.FailedContentDownload
-                    downloadedContent.append(str(downloadResult[1]))
-                    self.cli.clear()
-
-            except (ModuleNotFoundError, ImportError):
-                self.log('progressbar2 not installed')
-                for i in range(len(packageData['content'])):#same as above with custom progress info since we cant use progressbar2
-                    print(f'Downloading package data\n {i}/{packageData["content"]} - {str(round((i/len(packageData["content"]))*100,1))+"%"} ')
-                    print(F"Downloading: {packageData['content'][i]['address']}")
-                    downloadResult = self.data.downloadFile(packageData['content'][i]['address'],self.detection.getPath('$CONFIG')+'temporary/content',packageData['content'][i]['filename'])
-                    if downloadResult[0] == False:
-                        print("Failed to download "+str(packageData['content'][i]))
-                        raise self.SPMCLIExceptions.FailedContentDownload
-                    downloadedContent.append(str(downloadResult[1]))
-                    self.cli.clear()
-
-            print("Finished downloading assets")#we've passed, all gucci time to continue
 
 # --------------------------- check asset integrity -------------------------- #
-            step = 1; steps = len(packageData["content"])
-            for i in packageData["content"]:
-                self.cli.clear()
-                print(f"Checking integrity of {packageData['name']} v{packageData['version']}...")
-                print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nFile: {i['filename']}\n--------------------------------")
-                self.log('Current step: '+str(i))
-                print(f"The asset {i['filename']} was downloaded from {i['address']} and is expected to have a sha256 hash of {packageData['checksum'][i['address']]}")
-                print("\nGenerating the sha256sum...")
-                checksum=self.etc.sha256sum(packageData['checksum'][i['address']],self.detection.getPath('$CONFIG')+'temporary/content/'+i['filename'])
-                if checksum == True: print(f"The downloaded file ({i['filename']}) has a valid checksum")
-                else: raise self.SPMCLIExceptions.IntegrityError(i['filename'])
-
+            self.checkPackageContentIntegrity(packageData)
 # -------------------------------- change cwd -------------------------------- #
             #Ensure we wont accidentally write into the cwd by changing it
             #we'll move to the temp dir
@@ -279,48 +339,7 @@ class package(object):
             # Install step loop
             print("Installing...")
             #import time
-            step = 1; steps = len(packageData["install"][thisSystem])
-            for i in packageData["install"][thisSystem]:
-                #info for end-user
-                self.cli.clear()
-                print(f"Installing {packageData['name']} v{packageData['version']}...")
-                print(f"--------------------------------\nOn step {str(step)} of {str(steps)}  -  {int(round((step-1/steps)*100,1))}% complete\n--------------------------------\nStep: {i['name']}\n--------------------------------")
-                self.log('Current step: '+str(i))
-                #time.sleep(1)
-
-                #Is step a command
-                if i['method'] == 'command':
-                    commandToRun = i['command']
-                    print("Executing: "+str(commandToRun))
-                    self.os.system(commandToRun)
-                    if exitCode != 0: 
-                        raise self.SPMCLIExceptions.FailedCommandExecution(command=commandToRun)
-
-                #Is step a script
-                if i['method'] == 'script':
-                    # Script filename is at packageData[ content[ scripts[script] ][1] ]
-
-                    #Get the filename of the script we want
-                    scriptToRun=packageData["content"][int(packageData["scripts"][i["script"]])]["filename"]
-                    self.log('Attempting to identify the script to execute ' + str(scriptToRun))
-
-                    #Get the temporary path to the script
-                    temporaryPath = self.detection.getPath('$CONFIG')+'temporary/content/'
-
-                    #Determine how we should execute the script
-                    if self.detection.platformname() == 'Darwin': 'sh ' + temporaryPath + scriptToRun
-                    elif 'lin' in thisSystem: scriptToRun = 'bash ' + temporaryPath + scriptToRun
-                    elif 'win' in thisSystem: scriptToRun = './' +  temporaryPath + scriptToRun
-
-                    print("Executing "+str(scriptToRun))
-                    exitCode = self.os.system(scriptToRun)
-                    if exitCode != 0:
-                        raise self.SPMCLIExceptions.FailedScriptExecution(filename=temporaryPath)
-
-
-            self.cli.clear()
-            print(f"Installed {packageData['name']} v{packageData['version']}...")
-            print(f"--------------------------------\nCompleted !    -  100% complete\n--------------------------------")
+            self.actionRoutine(packageData,'install',thisSystem)
             print("Cleaning")
 
 
