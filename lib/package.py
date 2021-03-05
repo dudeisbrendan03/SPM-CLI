@@ -4,6 +4,43 @@ SPM-API
 package tools library
 
 
+package(object)
+    init(verbose) -->
+        args:
+            verbose <-> Will log debug information to console if set to true, this flag is used to pass into cli
+        
+        steps:
+            1. Import into self scope
+                1. Import libs from outside the project
+                2. Import libs from inside the project
+                3. Import custom exceptions
+                4. Get the configuration
+                5. Initialise any classes which have yet to be initialized
+    
+    downloadPackage(package) -->
+        args:
+            package -> The uri format package you want to download
+        
+        steps:
+            1. Parse package information
+                1. Check if we already have the information cached locally
+                    1. pass
+                    2. Connect to API and download the package information, then cache it
+                3. Load the information cached
+                4. Ensure it is dict, not str
+            2. Check if the system may install this package
+                1. Get the support system
+                2. Get the current system
+                3. Check not Darwin package
+                4. Check if systems match or if both darwin
+            3. Download all content/assets
+                1. Create temporary directories
+                2. Download all data present in content
+
+
+                tbc
+
+
 """
 
 
@@ -36,6 +73,7 @@ class package(object):
         self.data = data(verbose)
         self.os = os
         self.cli = cli
+        self.etc = etc
         self.json = etc.getJson()
         self.api = api(verbose)
         self.detection = detection(verbose)
@@ -126,7 +164,7 @@ class package(object):
     def downloadPackage(self, package):
         try:
 
-# ------------------------- parse package informatio ------------------------- #
+# ------------------------- parse package information ------------------------ #
             packageuuid = f"{package.split('/')[1]}.{package.split('/')[0]}"#Make the package uuid
             
             print("Checking package status...")
@@ -229,12 +267,11 @@ class package(object):
                 checksum=self.etc.sha256sum(packageData['checksum'][i['address']],self.detection.getPath('$CONFIG')+'temporary/content/'+i['filename'])
                 if checksum == True: print(f"The downloaded file ({i['filename']}) has a valid checksum")
                 else: raise self.SPMCLIExceptions.IntegrityError(i['filename'])
-                input()
 
 # -------------------------------- change cwd -------------------------------- #
             #Ensure we wont accidentally write into the cwd by changing it
             #we'll move to the temp dir
-            self.os.chdir(self.detection('$CONFIG')+'temporary/')
+            self.os.chdir(self.detection.getPath('$CONFIG')+'temporary/')
 
 # ---------------------------- begin installation ---------------------------- #
             self.log(f'Steps:\n{self.json.dumps(packageData["install"],indent=4)}')
