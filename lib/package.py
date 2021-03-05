@@ -158,7 +158,7 @@ class package(object):
                 from progressbar import progressbar
                 for i in progressbar(packageData['content']):
                     print(f"\nDownloading: {i}")#loop through content and download each one
-                    downloadResult = self.data.downloadFile(i,self.detection.getPath('$CONFIG')+'temporary/content')
+                    downloadResult = self.data.downloadFile(i['address'],self.detection.getPath('$CONFIG')+'temporary/content',i['filename'])
                     if downloadResult[0] == False:
                         print("Failed to download "+str(i))
                         raise self.SPMCLIExceptions.FailedContentDownload
@@ -169,16 +169,18 @@ class package(object):
                 self.log('progressbar2 not installed')
                 for i in len(packageData['content']):#same as above with custom progress info since we cant use progressbar2
                     print(f'Downloading package data\n {i}/{packageData["content"]} - {str(round((i/len(packageData["content"]))*100,1))+"%"} ')
-                    print(F"Downloading: {packageData['content'][i]}")
-                    downloadResult = self.data.downloadFile(packageData['content'][i],self.detection.getPath('$CONFIG')+'temporary/content')
+                    print(F"Downloading: {packageData['content'][i]['address']}")
+                    downloadResult = self.data.downloadFile(packageData['content'][i]['address'],self.detection.getPath('$CONFIG')+'temporary/content',packageData['content'][i]['filename'])
                     if downloadResult[0] == False:
                         print("Failed to download "+str(packageData['content'][i]))
                         raise self.SPMCLIExceptions.FailedContentDownload
                     downloadedContent.append(str(downloadResult[1]))
                     self.cli.clear()
 
-            print("Finished downloading assets, downloading scripts")#we've passed, all gucci time to continue
+            print("Finished downloading assets")#we've passed, all gucci time to continue
 
+            self.log(f'Steps: {self.json.stringify(packageData["install"])}')
+            
             #self.data.deleteConfigDirectory('temporary')#finished the installation, delete the temporary directory
 
 

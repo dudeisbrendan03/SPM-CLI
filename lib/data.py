@@ -109,18 +109,19 @@ class data(object):
             return None
         return fname[0]
 
-    def downloadFile(self,uri,writeLocation):
+    def downloadFile(self,uri,writeLocation,filename=""):
         self.log('Trying to download: '+str(uri))
         try:
             r = self.requests.get(uri, allow_redirects=True)
-            try: filename = self.getFilename_fromCd(r.headers.get('content-disposition'))
-            except:
-                from re import compile
-                self.log("Couldn't determine filename, attempting alternative method")
-                plainuri = compile(r"https?://(www\.)?").sub('',uri).strip().strip('/')
-                try: filename = plainuri.split('/')[-1]
-                except IndexError: filename = plainuri
-                self.log("Output using regex: "+str(filename))
+            if filename == "":
+                try: filename = self.getFilename_fromCd(r.headers.get('content-disposition'))
+                except:
+                    from re import compile
+                    self.log("Couldn't determine filename, attempting alternative method")
+                    plainuri = compile(r"https?://(www\.)?").sub('',uri).strip().strip('/')
+                    try: filename = plainuri.split('/')[-1]
+                    except IndexError: filename = plainuri
+                    self.log("Output using regex: "+str(filename))
                 
             self.log(f"Writing to {writeLocation+'/'+filename}")
             open(writeLocation+'/'+filename, 'wb').write(r.content)
