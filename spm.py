@@ -74,6 +74,7 @@ try:
     if sys.argv[1] == 'install':
         try: package.downloadPackage(sys.argv[2])
         except SPMCLIExceptions.BadPackageName as e: print("You specified an invalid package or something went wrong"); cli.verbose('Uncaught exception occured in runtime '+str(e))
+        except SPMCLIExceptions.UnsupportedOperatingSystem: print("The package you've tried to install is not supported by your operating system")
 
     elif sys.argv[1] == 'remove':
         api.getPackage('something')
