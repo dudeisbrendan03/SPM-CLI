@@ -1,5 +1,17 @@
 # SPM-CLI
 
+## The state of spm
+
+Previous release:   None
+LTS release:        None
+Current release:    None
+Next release:       v1.0.0-alpha
+
+SPM is in development, we are yet to have a public release schedule.
+
+Currently, the project is not able to take contributions- it is being used for a formal project.
+~~Feel free to make contributions to the project!~~
+
 ## What is SPM
 
 SPM is intended to be a unified package manager, allowing software previously unpublished on package managers, and ones already existing on other ones, to exist in one place.
