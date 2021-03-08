@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD034 -->
+<!-- markdownlint-disable MD036 -->
 # SPM-CLI
 
 ## The state of spm
