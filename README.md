@@ -90,6 +90,19 @@ Thank you.
 
 The backend we originally designed isn't too well optimised and implemented, a new version is being built which will be available to the public.
 
+## Report an issue
+
+You can enable verbose debug logging in spm by using the `-v` flag.
+This flag will log verbose output to stdout, this can be used to see the actions leading up to the issue you're experiencing.
+
+Open an Issue on the GitHub Repository site describing the issue, showing us the verbose output.
+
+To log the output of spm to a file, and view the output, you can try the following.
+
+```shell
+spm [arguments...] 2>&1 | tee myLog
+```
+
 ## Footnotes
 
 [^1]: If this index is damaged, removed or rebuilt the remove command will not work on software installed prior to a new index being built.
