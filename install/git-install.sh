@@ -1,8 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 printf "\n  ____________   _____  \n /  ___/\\____ \\ /     \\ \n \\___ \\ |  |_> >  Y Y  \\ \n/____  >|   __/|__|_|  /\n     \\/ |__|         \\/ "
 echo "Getting ready to install"
 sleep 1
+
+if ! [[ $EUID = 0 && "$(ps -o comm= | sed -n '1p')" = "su" ]]; then
+    echo "To install this you must use sudo- but not in the shell as root."
+fi
 
 # ---------------------------------------------------------------------------- #
 #                                   Functions                                  #
