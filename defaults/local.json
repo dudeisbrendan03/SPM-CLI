@@ -1,0 +1,9 @@
+{
+    "packages": [
+        {
+            "name": "spm",
+            "directories": ["/usr/local/bin/spm","~/.spm"],
+            "version": "1.0.0"
+        }
+    ]
+}
