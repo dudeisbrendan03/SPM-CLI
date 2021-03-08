@@ -2,10 +2,13 @@
 
 ## The state of spm
 
-Previous release:   None
-LTS release:        None
-Current release:    None
-Next release:       v1.0.0-alpha
+Previous release:   **None**
+
+LTS release:        **None**
+
+Current release:    **None**
+
+Next release:       v1.0.0-**alpha**
 
 SPM is in development, we are yet to have a public release schedule.
 
