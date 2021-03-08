@@ -36,7 +36,7 @@ The syntax is very simple.
 *Used to remove installed software*
 
 The remove command is used to remove software installed on your machine.
-It tracks installed packages via the local index[^1].
+It tracks installed packages via the local index<sup id="a1">[1](#f1)</sup>.
 
 Unlike other package managers, for a proper removal of the software in the way the author wishes it to be removed, you will require an active internet connection.
 SPM will connect to a package management server to pull software-specific removal instructions.
@@ -50,7 +50,7 @@ If this is not available, spm can also delete directores and files associated wi
 *Used to update installed software- yet to be implemented*
 
 The update command is used to update software installed on your machine.
-It can only update software in your local index[^1].
+It can only update software in your local index<sup id="a1">[1](#f1)</sup>.
 
 Running this command will attempt to see if the author has specific update instructions, if not the software will simply run through the installation process again.
 
@@ -117,4 +117,4 @@ spm [arguments...] 2>&1 | tee myLog
 
 ## Footnotes
 
-[^1]: If this index is damaged, removed or rebuilt the remove command will not work on software installed prior to a new index being built.
+<b id="f1">1</b> If this index is damaged, removed or rebuilt the remove command will not work on software installed prior to a new index being built. [↩](#a1)
